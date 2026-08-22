@@ -32,8 +32,8 @@
 flowchart TD
     User([ผู้ใช้งาน / User]) -->|1. ค้นหาช่วงเวลา & จองคิว| Booking[ระบบจองคิวและสิทธิ์การเข้าถึง]
     Booking -->|2. รับ Credential / ข้อมูลเชื่อมต่อ| User
-    User -->|3. เชื่อมต่อ Remote| RemoteClient[โปรแกรมรีโมทสำเร็จรูป เช่น RustDesk/VNC]
-    RemoteClient -->|ควบคุม| MacHost[(Mactile Mac Host)]
+    User -->|3. เชื่อมต่อ Remote| RemoteClient[Moonlight Client เชื่อมต่อ Game Streaming]
+    RemoteClient -->|สตรีมภาพ/ควบคุม| MacHost[(Mactile Mac Host พร้อม Sunshine Streaming Host)]
     
     subgraph System & Admin [ระบบควบคุมและดูแล]
         Admin([ผู้ดูแลระบบ / Admin]) -->|ควบคุม/ตรวจสอบ| Dashboard[Admin Dashboard]
@@ -63,12 +63,12 @@ flowchart TD
 - **การรีเซ็ตระดับฉุกเฉิน (Admin Manual/Forced Reset):**
   - ผู้ดูแลระบบสามารถกดสั่ง Restart หรือ Run Reset Script ได้ทันทีจาก Dashboard
 
-#### 3.3 การเชื่อมต่อรีโมทด้วยโปรแกรมสำเร็จรูป (Remote Connection via Existing Software)
+#### 3.3 การเชื่อมต่อรีโมทด้วยระบบ Game Streaming (Remote Connection via Moonlight & Sunshine)
 - **ซอฟต์แวร์รีโมทที่รองรับ:**
-  - ซอฟต์แวร์ Remote Desktop มาตรฐาน (เช่น RustDesk, VNC / Apple Screen Sharing, AnyDesk, Chrome Remote Desktop หรือ SSH สำหรับ Command-Line)
+  - ประยุกต์ใช้ระบบ Game Streaming แบบ Low-Latency ได้แก่ **Sunshine** (ติดตั้งเป็น Streaming Host/Server บนเครื่อง Mac Host) คู่กับ **Moonlight** (โปรแกรม Client ฝั่งผู้ใช้งาน รองรับทั้ง Desktop, Mobile และ Web) เพื่อให้ได้ภาพความหน่วงต่ำและคุณภาพสูงกว่า Remote Desktop ทั่วไป
 - **การแจกจ่ายข้อมูลการเชื่อมต่อ:**
-  - แสดง Hostname/IP, Port, Connection ID และรหัสผ่านที่หน้าเว็บระบบเมื่อถึงเวลาจอง
-  - มีคู่มือขั้นตอนการเชื่อมต่อแบบทีละขั้นตอน (Step-by-Step Guide) ให้ผู้ใช้
+  - แสดง Hostname/IP, PIN Pairing Code และรหัสผ่านที่หน้าเว็บระบบเมื่อถึงเวลาจอง เพื่อใช้จับคู่ (Pair) ระหว่าง Moonlight Client กับ Sunshine Host
+  - มีคู่มือขั้นตอนการติดตั้งและเชื่อมต่อแบบทีละขั้นตอน (Step-by-Step Guide) สำหรับการ Pair และเริ่ม Stream ผ่าน Moonlight ให้ผู้ใช้
 
 #### 3.4 หน้า Dashboard สำหรับผู้ดูแลระบบ (Admin Dashboard)
 - **ภาพรวมสถานะเครื่อง (Host Status Overview):**
@@ -99,7 +99,7 @@ flowchart TD
 | **Backend API / Service** | Node.js / Python / Go (สำหรับจัดการ Booking, State, และสั่ง Exec Script) |
 | **Database** | SQLite / PostgreSQL สำหรับเก็บข้อมูลผู้ใช้ ตารางจอง และ Logs |
 | **Host Automation** | macOS Shell Scripts (`zsh`/`bash`), AppleScript, Launchd |
-| **Remote Tool** | RustDesk / VNC (Screen Sharing) / SSH |
+| **Remote Tool** | Moonlight (Client) + Sunshine (Host) — ระบบ Game Streaming สำหรับ Low-Latency Remote Access |
 
 ---
 
@@ -123,7 +123,7 @@ flowchart TD
 2. **ความเสี่ยง:** ข้อมูลส่วนบุคคลหรือประวัติผู้ใช้คนก่อนหน้าหลงเหลือ
    - **แนวทางแก้ไข:** ออกแบบ Cleanup Script ให้ครอบคลุมทั้ง Keychain, Browsing Data, Shell History, และ User Files
 3. **ความเสี่ยง:** ประสิทธิภาพและความหน่วงของการเชื่อมต่อ Remote Desktop
-   - **แนวทางแก้ไข:** เลือกใช้โปรแกรมรีโมทที่มีประสิทธิภาพสูงบน LAN/Internet (เช่น RustDesk หรือ Native Apple Screen Sharing) พร้อมตั้งค่า Bandwidth / Resolution ที่เหมาะสม
+   - **แนวทางแก้ไข:** ใช้ระบบ Game Streaming อย่าง Sunshine/Moonlight ซึ่งออกแบบมาเพื่อความหน่วงต่ำ (Low-Latency) บน LAN/Internet โดยเฉพาะ พร้อมตั้งค่า Bitrate / Resolution / FPS ให้เหมาะสมกับสภาพเครือข่าย
 
 ---
 

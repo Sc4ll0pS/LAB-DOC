@@ -106,7 +106,7 @@ flowchart LR
 - **Given:** ผู้ใช้สิ้นสุดการใช้งานโดยมีการเปิดแอปพลิเคชัน (เช่น Xcode, VS Code, Browser, Simulator หรือรัน Node Server) ค้างไว้
 - **When:** ระบบสั่งรัน Automated Reset Script
 - **Then:**
-  1. Remote Daemon ทำการ Drop Session ของผู้ใช้ออกทันที
+  1. Sunshine Streaming Host ทำการ Drop Session การ Stream ของผู้ใช้ออกทันที
   2. Script ทำการ Kill User-level Processes ทั้งหมดที่รันภายใต้บัญชีผู้ใช้ทดสอบ
 
 #### AC-3.2: การล้างโฟลเดอร์และไฟล์ชั่วคราว (Filesystem Sanitization)
@@ -122,7 +122,7 @@ flowchart LR
 - **Then:**
   1. ไฟล์ประวัติ Shell History (`~/.zsh_history`, `~/.bash_history`) ถูกล้างเป็นค่าว่าง
   2. แคชและคุกกี้ของ Browser หลัก (Safari, Chrome) ถูกล้าง
-  3. รหัสผ่านชั่วคราวของ Remote Service ถูกสุ่มใหม่ (Rotated)
+  3. Pairing PIN ชั่วคราวของ Sunshine ถูกสุ่มใหม่ (Rotated) และการจับคู่ (Pairing) เดิมกับ Moonlight Client ถูกยกเลิก
 
 #### AC-3.4: ระยะเวลาและความสมบูรณ์ของการรีเซ็ต (Reset Timing & Status Transition)
 - **Given:** Host อยู่ในสถานะ `Resetting`
@@ -141,29 +141,29 @@ flowchart LR
 
 ---
 
-### หมวดที่ 4: การเชื่อมต่อรีโมทด้วยโปรแกรมสำเร็จรูป (Remote Connection Gateway)
+### หมวดที่ 4: การเชื่อมต่อรีโมทด้วยระบบ Game Streaming (Remote Connection Gateway)
 
-#### AC-4.1: การเชื่อมต่อผ่านโปรแกรม RustDesk
-- **Given:** ผู้ใช้ได้รับ Connection ID และ One-Time Password จากระบบ
-- **When:** ผู้ใช้เปิดโปรแกรม RustDesk บนเครื่องของตนเอง กรอก Remote ID และ Password ที่ได้รับ
+#### AC-4.1: การจับคู่และเชื่อมต่อผ่านโปรแกรม Moonlight
+- **Given:** ผู้ใช้ได้รับ Hostname/IP ของ Mac Host และ Pairing PIN แบบ One-Time จากระบบ
+- **When:** ผู้ใช้เปิดโปรแกรม Moonlight บนเครื่องของตนเอง เพิ่ม Host ด้วย IP ที่ได้รับ และกรอก PIN เพื่อจับคู่ (Pair) กับ Sunshine Streaming Host
 - **Then:**
-  1. สามารถเชื่อมต่อหน้าจอ Mac Host ได้อย่างราบรื่น ภาพและเสียงแสดงผลถูกต้อง
-  2. สามารถควบคุมเมาส์และคีย์บอร์ดได้ตามปกติ
+  1. การจับคู่สำเร็จ และสามารถเริ่ม Stream หน้าจอ Mac Host ได้อย่างราบรื่น ภาพและเสียงแสดงผลถูกต้องด้วยความหน่วงต่ำ
+  2. สามารถควบคุมเมาส์และคีย์บอร์ดผ่าน Moonlight ได้ตามปกติ
 
-#### AC-4.2: การเชื่อมต่อผ่านโปรแกรม VNC / Apple Screen Sharing
-- **Given:** ผู้ใช้ได้รับ Host IP, VNC Port และ Temporary Password
-- **When:** ผู้ใช้เปิดโปรแกรม VNC Viewer (หรือเปิดผ่าน Browser/macOS Screen Sharing)
-- **Then:** สามารถเชื่อมต่อไปยังหน้าจอ Desktop ของ Mac Host ได้สำเร็จ
+#### AC-4.2: คุณภาพและประสิทธิภาพของการ Stream
+- **Given:** ผู้ใช้เชื่อมต่อ Session ผ่าน Moonlight สำเร็จแล้ว
+- **When:** ผู้ใช้ปรับตั้งค่า Resolution, Bitrate หรือ FPS บนโปรแกรม Moonlight
+- **Then:** ภาพที่ Stream จาก Sunshine ปรับเปลี่ยนคุณภาพตามค่าที่ตั้งได้ถูกต้อง และความหน่วง (Latency) อยู่ในระดับที่เหมาะสมสำหรับการใช้งานทั่วไป (พิมพ์งาน, Build, ทดสอบแอป)
 
-#### AC-4.3: การเชื่อมต่อผ่าน SSH สำหรับ Command-Line
-- **Given:** ผู้ใช้ได้รับคำสั่ง SSH String เช่น `ssh testuser@host-ip -p 2222` พร้อมรหัสผ่าน
-- **When:** ผู้ใช้รันคำสั่งบน Terminal
-- **Then:** เข้าสู่ Shell บนเครื่อง Mac Host ได้สำเร็จภายในกรอบสิทธิ์ที่กำหนด
+#### AC-4.3: การใช้งาน Command-Line ผ่านหน้าจอที่ Stream
+- **Given:** ผู้ใช้เชื่อมต่อผ่าน Moonlight และมองเห็นหน้าจอ Desktop ของ Mac Host แล้ว
+- **When:** ผู้ใช้เปิดโปรแกรม Terminal บนหน้าจอที่ Stream มา
+- **Then:** สามารถรันคำสั่ง Build/Test ผ่าน Terminal ได้ตามปกติภายในกรอบสิทธิ์ของผู้ใช้ทดสอบ โดยไม่ต้องเปิดช่องทาง SSH แยกต่างหาก
 
 #### AC-4.4: การป้องกันการเชื่อมต่อหลังหมดเวลา (Post-Session Connection Rejection)
-- **Given:** Session ของผู้ใช้สิ้นสุดลงแล้ว และรหัสผ่านถูกสับเปลี่ยนใหม่แล้ว
-- **When:** ผู้ใช้พยายามใช้ Connection ID/IP และรหัสผ่านเดิมเพื่อเชื่อมต่อใหม่
-- **Then:** โปรแกรม Remote ต้องปฏิเสธการเชื่อมต่อ (Authentication Failed) ไม่สามารถเข้าถึงเครื่องได้
+- **Given:** Session ของผู้ใช้สิ้นสุดลงแล้ว และ Pairing PIN/การจับคู่เดิมถูกยกเลิกแล้ว
+- **When:** ผู้ใช้พยายามใช้ Moonlight Client เดิมเพื่อเชื่อมต่อ Mac Host เครื่องเดิมอีกครั้งโดยไม่จับคู่ใหม่
+- **Then:** Sunshine ต้องปฏิเสธการเชื่อมต่อ (Unpaired/Authentication Failed) ไม่สามารถเข้าถึงเครื่องได้
 
 ---
 
@@ -221,11 +221,11 @@ flowchart LR
 | **TC-02** | Auth | ทดสอบการป้องกัน URL `/admin` ด้วยสิทธิ์ User | โดนปฏิเสธการเข้าถึง (403 / Redirect) | [ ] | |
 | **TC-03** | Booking | จองคิวสล็อตว่าง 1 ชั่วโมง | จองสำเร็จ สล็อตเปลี่ยนเป็น Booked ในระบบ | [ ] | |
 | **TC-04** | Booking | ยิงคำขอจองสล็อตเดียวกันพร้อมกัน 2 บัญชี | บัญชีแรกสำเร็จ บัญชีสองได้รับแจ้งเตือน Slot Busy | [ ] | |
-| **TC-05** | Remote | รับ One-time Password เมื่อถึงเวลาจอง | แสดง Host, ID, Password และ Countdown Timer ถูกต้อง | [ ] | |
-| **TC-06** | Remote | เชื่อมต่อผ่าน RustDesk / VNC | แสดงหน้าจอ Desktop ควบคุมเมาส์/คีย์บอร์ดได้ | [ ] | |
+| **TC-05** | Remote | รับ Pairing PIN เมื่อถึงเวลาจอง | แสดง Host, PIN และ Countdown Timer ถูกต้อง | [ ] | |
+| **TC-06** | Remote | เชื่อมต่อผ่าน Moonlight เข้ากับ Sunshine | แสดงหน้าจอ Desktop แบบ Stream ควบคุมเมาส์/คีย์บอร์ดได้ | [ ] | |
 | **TC-07** | Reset | ทดสอบสร้างไฟล์บน Desktop แล้วกด End Session | ไฟล์บน Desktop และ Downloads ถูกล้างหมดจด | [ ] | |
 | **TC-08** | Reset | ทดสอบ Kill Background Process ที่เปิดค้างไว้ | Process ถูกปิดสนิท ไม่ค้างใน Activity Monitor | [ ] | |
-| **TC-09** | Remote | นำ Password เดิมไปเชื่อมต่อหลังหมด Session | ถูกปฏิเสธการเชื่อมต่อ (Auth Failed) | [ ] | |
+| **TC-09** | Remote | นำ Pairing เดิมไปเชื่อมต่อ Moonlight หลังหมด Session | ถูกปฏิเสธการเชื่อมต่อ (Unpaired/Auth Failed) | [ ] | |
 | **TC-10** | Admin | ตรวจสอบ Live Status Cards บน Admin Dashboard | แสดงสถานะสอดคล้องกับสถานะจริงของ Host | [ ] | |
 | **TC-11** | Admin | กดปุ่ม Force Disconnect จาก Dashboard | User ถูกเตะออกจากเครื่องทันที และเริ่ม Reset | [ ] | |
 | **TC-12** | Admin | กดสั่ง Manual Reset จาก Dashboard | Host เข้าสู่โหมด Resetting และกลับมาเป็น Available | [ ] | |

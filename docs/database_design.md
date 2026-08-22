@@ -58,8 +58,8 @@ erDiagram
         VARCHAR(50) os_version
         VARCHAR(50) specs_cpu
         VARCHAR(20) specs_ram
-        VARCHAR(20) remote_type "rustdesk | vnc | ssh"
-        VARCHAR(100) remote_id "RustDesk ID or Port"
+        VARCHAR(20) remote_type "sunshine-moonlight"
+        VARCHAR(100) remote_id "Sunshine Streaming Port"
         VARCHAR(20) status "available | in_use | resetting | maintenance | offline"
         BOOLEAN is_active
         DATETIME last_heartbeat_at
@@ -74,7 +74,7 @@ erDiagram
         DATETIME start_time
         DATETIME end_time
         VARCHAR(20) status "scheduled | active | completed | cancelled | terminated"
-        VARCHAR(64) temp_remote_password "Hashed / Encrypted"
+        VARCHAR(64) temp_remote_password "Sunshine Pairing PIN, Hashed / Encrypted"
         VARCHAR(255) cancellation_reason
         DATETIME created_at
         DATETIME updated_at
@@ -161,8 +161,8 @@ erDiagram
 | `os_version` | VARCHAR(50) | YES | NULL | เวอร์ชันระบบปฏิบัติการ (เช่น `macOS Sequoia 15.1`) |
 | `specs_cpu` | VARCHAR(50) | YES | NULL | ข้อมูล CPU (เช่น `Apple M2 8-Core`) |
 | `specs_ram` | VARCHAR(20) | YES | NULL | ขนาดหน่วยความจำ (เช่น `16 GB`) |
-| `remote_type` | VARCHAR(20) | NO | `'rustdesk'` | ชนิดโปรแกรมรีโมท (`'rustdesk'`, `'vnc'`, `'ssh'`) |
-| `remote_id` | VARCHAR(100) | YES | NULL | Connection ID ของโปรแกรมรีโมท (เช่น RustDesk ID) |
+| `remote_type` | VARCHAR(20) | NO | `'sunshine-moonlight'` | ชนิดระบบรีโมท (Game Streaming ผ่าน `'sunshine-moonlight'`) |
+| `remote_id` | VARCHAR(100) | YES | NULL | Port ที่ Sunshine Streaming Host เปิดให้บริการบนเครื่องนั้น (เช่น `47989`) |
 | `status` | VARCHAR(20) | NO | `'available'` | สถานะปัจจุบัน (`'available'`, `'in_use'`, `'resetting'`, `'maintenance'`, `'offline'`) |
 | `is_active` | BOOLEAN | NO | `TRUE` | เปิด/ปิดการใช้งานเครื่องในระบบ |
 | `last_heartbeat_at` | DATETIME | YES | NULL | เวลาที่ Agent ส่งสัญญาณตรวจสอบสถานะล่าสุด |
@@ -182,7 +182,7 @@ erDiagram
 | `start_time` | DATETIME | NO | - | เวลาเริ่มต้นการจอง (UTC) |
 | `end_time` | DATETIME | NO | - | เวลาสิ้นสุดการจอง (UTC) |
 | `status` | VARCHAR(20) | NO | `'scheduled'` | สถานะการจอง (`'scheduled'`, `'active'`, `'completed'`, `'cancelled'`, `'terminated'`) |
-| `temp_remote_password` | VARCHAR(64) | YES | NULL | รหัสผ่านรีโมทชั่วคราว (สุ่มใหม่ในรอบการจอง) |
+| `temp_remote_password` | VARCHAR(64) | YES | NULL | Pairing PIN ชั่วคราวสำหรับจับคู่ Moonlight กับ Sunshine (สุ่มใหม่ในรอบการจอง) |
 | `cancellation_reason`| VARCHAR(255) | YES | NULL | เหตุผลที่ยกเลิกการจอง (หากมี) |
 | `created_at` | DATETIME | NO | CURRENT_TIMESTAMP | วันเวลาที่ทำการจอง |
 | `updated_at` | DATETIME | NO | CURRENT_TIMESTAMP | วันเวลาที่อัปเดตสถานะล่าสุด |
@@ -317,7 +317,7 @@ CREATE TABLE IF NOT EXISTS hosts (
     os_version VARCHAR(50),
     specs_cpu VARCHAR(50),
     specs_ram VARCHAR(20),
-    remote_type VARCHAR(20) NOT NULL DEFAULT 'rustdesk' CHECK (remote_type IN ('rustdesk', 'vnc', 'ssh')),
+    remote_type VARCHAR(20) NOT NULL DEFAULT 'sunshine-moonlight' CHECK (remote_type IN ('sunshine-moonlight')),
     remote_id VARCHAR(100),
     status VARCHAR(20) NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'in_use', 'resetting', 'maintenance', 'offline')),
     is_active BOOLEAN NOT NULL DEFAULT 1,
@@ -423,14 +423,14 @@ INSERT INTO users (username, email, password_hash, role, status) VALUES
 
 -- 2. ข้อมูลเครื่อง Mac Host เริ่มต้น
 INSERT INTO hosts (name, hostname, ip_address, specs_cpu, specs_ram, remote_type, remote_id, status, is_active) VALUES
-('Mac-Mini-M2-01', 'mac-mini-01.local', '192.168.1.101', 'Apple M2 8-Core', '16 GB', 'rustdesk', '981244512', 'available', 1),
-('Mac-Mini-M2-02', 'mac-mini-02.local', '192.168.1.102', 'Apple M2 8-Core', '16 GB', 'rustdesk', '981244513', 'available', 1),
-('Mac-Studio-M2Max-01', 'mac-studio-01.local', '192.168.1.105', 'Apple M2 Max 12-Core', '32 GB', 'vnc', '5900', 'available', 1);
+('Mac-Mini-M2-01', 'mac-mini-01.local', '192.168.1.101', 'Apple M2 8-Core', '16 GB', 'sunshine-moonlight', '47989', 'available', 1),
+('Mac-Mini-M2-02', 'mac-mini-02.local', '192.168.1.102', 'Apple M2 8-Core', '16 GB', 'sunshine-moonlight', '47989', 'available', 1),
+('Mac-Studio-M2Max-01', 'mac-studio-01.local', '192.168.1.105', 'Apple M2 Max 12-Core', '32 GB', 'sunshine-moonlight', '47989', 'available', 1);
 
 -- 3. ค่าตั้งค่าระบบเริ่มต้น
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
 ('MAX_SLOT_DURATION_MINUTES', '120', 'ระยะเวลาสูงสุดที่อนุญาตให้จองต่อ 1 สล็อต (นาที)'),
 ('SLOT_BUFFER_MINUTES', '5', 'ระยะเวลาบัฟเฟอร์สำหรับกระบวนการ Reset ระหว่างสล็อต (นาที)'),
 ('EXPIRY_WARNING_MINUTES', '5', 'เวลาแจ้งเตือนล่วงหน้าก่อน Session หมดเวลา (นาที)'),
-('DEFAULT_REMOTE_TYPE', 'rustdesk', 'โปรแกรมรีโมทเริ่มต้นสำหรับเครื่องใหม่');
+('DEFAULT_REMOTE_TYPE', 'sunshine-moonlight', 'ระบบ Game Streaming เริ่มต้นสำหรับเครื่องใหม่ (Sunshine Host + Moonlight Client)');
 ```

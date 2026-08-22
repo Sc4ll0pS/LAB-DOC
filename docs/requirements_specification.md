@@ -37,7 +37,8 @@
 | **Session** | ช่วงระยะเวลาที่ผู้ใช้ได้รับสิทธิ์เชื่อมต่อและใช้งานเครื่อง Host |
 | **Ephemeral Credential** | ข้อมูลการเข้าสู่ระบบแบบชั่วคราว (มีอายุการใช้งานจำกัดตามช่วงเวลาจอง) |
 | **Sanitization / Reset** | กระบวนการล้างไฟล์ชั่วคราว ประวัติการใช้งาน และคืนค่าสถานะเครื่อง |
-| **Remote Client** | ซอฟต์แวร์ฝั่งผู้ใช้สำหรับควบคุมหน้าจอ เช่น RustDesk, VNC Viewer, AnyDesk, หรือ SSH Client |
+| **Remote Client** | โปรแกรม **Moonlight** ฝั่งผู้ใช้งานสำหรับรับสตรีมภาพและควบคุมหน้าจอ Mac Host ผ่านโปรโตคอล Game Streaming |
+| **Streaming Host** | ซอฟต์แวร์ **Sunshine** ที่ติดตั้งบนเครื่อง Mac Host ทำหน้าที่เป็น Server สำหรับเข้ารหัสและส่งสตรีมภาพ/เสียงไปยัง Moonlight Client |
 | **RBAC** | Role-Based Access Control (การควบคุมสิทธิ์ตามบทบาทผู้ใช้) |
 
 ---
@@ -63,7 +64,7 @@ flowchart TB
     subgraph Client_Layer [Client Layer]
         U[Web Browser - User]
         A[Web Browser - Admin]
-        RC[Remote Client: RustDesk / VNC / SSH]
+        RC[Remote Client: Moonlight]
     end
 
     subgraph Service_Layer [Mactile Core Platform]
@@ -75,9 +76,9 @@ flowchart TB
     end
 
     subgraph Host_Layer [Mac Hosts Pool]
-        Host1[Mac Host 1: macOS Agent / Scripts / Remote Daemon]
-        Host2[Mac Host 2: macOS Agent / Scripts / Remote Daemon]
-        HostN[Mac Host N: macOS Agent / Scripts / Remote Daemon]
+        Host1[Mac Host 1: macOS Agent / Scripts / Sunshine Streaming Host]
+        Host2[Mac Host 2: macOS Agent / Scripts / Sunshine Streaming Host]
+        HostN[Mac Host N: macOS Agent / Scripts / Sunshine Streaming Host]
     end
 
     U -->|HTTP/REST| API
@@ -92,8 +93,8 @@ flowchart TB
     ResetEngine -->|SSH / Local Daemon RPC / Script Exec| Host2
     ResetEngine -->|SSH / Local Daemon RPC / Script Exec| HostN
     
-    RC -.->|Direct Remote Protocol / P2P| Host1
-    RC -.->|Direct Remote Protocol / P2P| Host2
+    RC -.->|Moonlight-Sunshine Streaming Protocol| Host1
+    RC -.->|Moonlight-Sunshine Streaming Protocol| Host2
 ```
 
 ---
@@ -142,14 +143,15 @@ flowchart TB
 
 ---
 
-### FR-4: การเชื่อมต่อรีโมทด้วยโปรแกรมสำเร็จรูป (Remote Connection Gateway)
-- **FR-4.1 การใช้งานร่วมกับซอฟต์แวร์ Remote สำเร็จรูป:**
-  - รองรับการเชื่อมต่อผ่านซอฟต์แวร์ Remote Desktop เช่น **RustDesk**, **VNC / Apple Screen Sharing**, **AnyDesk** หรือ **SSH** (สำหรับ CLI/Build tasks)
-  - ไม่บังคับให้ผู้ใช้ต้องติดตั้ง Custom Remote Client เฉพาะทาง สามารถใช้ Client มาตรฐานของโปรแกรมนั้นๆ ได้ทันที
+### FR-4: การเชื่อมต่อรีโมทด้วยระบบ Game Streaming (Remote Connection Gateway)
+- **FR-4.1 การใช้งานร่วมกับระบบ Game Streaming Moonlight/Sunshine:**
+  - ประยุกต์ใช้ **Sunshine** เป็น Self-hosted Game Stream Host ติดตั้งบนเครื่อง Mac Host แต่ละเครื่อง ทำหน้าที่ Capture หน้าจอและเข้ารหัสสตรีมภาพ/เสียงแบบ Low-Latency (รองรับ Hardware Encoding)
+  - ผู้ใช้เชื่อมต่อผ่านโปรแกรม **Moonlight** (มีให้ใช้งานบน Windows, macOS, Linux, iOS/Android และ Web Client) โดยไม่ต้องติดตั้ง Custom Remote Client เฉพาะทาง สามารถดาวน์โหลด Moonlight มาตรฐานได้ทันที
+  - รองรับการทำ Command-Line/Build Tasks ผ่าน Terminal ที่เปิดใช้งานภายในหน้าจอที่ Stream มา แทนการเปิด SSH แยกต่างหาก
 - **FR-4.2 หน้าแนะนำการเชื่อมต่อ (Quick Launch & Instruction Modal):**
-  - มีปุ่ม "Copy Connection Info" (IP, ID, Password)
-  - มีลิงก์ URI Scheme สำเร็จรูป (เช่น `vnc://...` หรือ `rustdesk://...`) เพื่อเปิดโปรแกรมอัตโนมัติเมื่อกดคลิก
-  - มีคำแนะนำการติดตั้งและการตั้งค่าเบื้องต้นให้ผู้ใช้
+  - มีปุ่ม "Copy Connection Info" (Hostname/IP และ PIN Pairing Code)
+  - มีขั้นตอนการจับคู่ (Pairing) ระหว่าง Moonlight Client กับ Sunshine Host ด้วย PIN แบบ One-Time ที่หน้าเว็บระบบ
+  - มีคำแนะนำการติดตั้ง Moonlight และการตั้งค่าเบื้องต้น (Resolution, Bitrate, FPS) ให้ผู้ใช้
 
 ---
 
@@ -166,7 +168,7 @@ flowchart TB
   - ปุ่ม **Cancel Booking** เพื่อยกเลิกคิวที่ผู้ใช้จองไว้ในกรณีฉุกเฉิน
 - **FR-5.3 การจัดการอุปกรณ์เครื่อง Mac (Host Management):**
   - เพิ่ม แก้ไข หรือปิดการใช้งาน (Enable/Disable) เครื่อง Host ในระบบ
-  - กำหนด IP, Remote Type (RustDesk/VNC/SSH) และพารามิเตอร์ของ Host
+  - กำหนด IP, Streaming Parameters (Sunshine Port, Pairing PIN) และพารามิเตอร์ของ Host
 - **FR-5.4 บันทึกประวัติและสถิติ (Audit Logs & Reports):**
   - บันทึก Log การจอง, เวลาเริ่ม-สิ้นสุดจริง, ผลการทำงานของ Reset Script, และการสั่งการของ Admin
   - บันทึกข้อผิดพลาด (Failure Logs) หากสคริปต์รีเซ็ตทำงานไม่สำเร็จ
@@ -193,7 +195,7 @@ flowchart TB
 
 ### 5.1 ส่วนต่อประสานผู้ใช้ (User Interfaces)
 - **UI-1 (User Booking View):** หน้าเลือกดูเครื่อง Mac, ตารางปฏิทินแสดง Slot, ปุ่มกดยืนยันการจอง, และหน้ารายการ "My Bookings"
-- **UI-2 (Active Session Modal):** ป๊อปอัปแสดงเมื่อถึงเวลาใช้งาน แสดง Countdown Timer, ข้อมูล Remote Host, ID, Password, และปุ่ม "End Session"
+- **UI-2 (Active Session Modal):** ป๊อปอัปแสดงเมื่อถึงเวลาใช้งาน แสดง Countdown Timer, ข้อมูล Remote Host, Pairing PIN สำหรับ Moonlight, และปุ่ม "End Session"
 - **UI-3 (Admin Dashboard View):** แดชบอร์ดสรุปสถิติ, Live Host Status Cards พร้อม Action Buttons (Reset, Reboot, Kick), และตารางจัดการ Booking ทั้งหมด
 
 ### 5.2 ส่วนต่อประสานฮาร์ดแวร์และระบบปฏิบัติการ (macOS Host Interfaces)
@@ -201,10 +203,10 @@ flowchart TB
 - สิทธิ์การรัน Script รีเซ็ตต้องได้รับสิทธิ์ `sudo` แบบ NOPASSWD สำหรับ Script เฉพาะทางที่กำหนด เพื่อความปลอดภัย
 
 ### 5.3 ส่วนต่อประสานซอฟต์แวร์ภายนอก (Software Interfaces)
-- **Remote Daemons:**
-  - RustDesk Service (Command-line interface สำหรับกำหนด password หรือดึง Connection ID)
-  - macOS Native Remote Management (`kickstart` / Apple Remote Desktop / VNC)
-  - OpenSSH Server
+- **Remote Streaming Daemons:**
+  - Sunshine Service (Self-hosted Game Stream Host — ติดตั้งบน Mac Host แต่ละเครื่อง รองรับการกำหนด Pairing PIN ผ่าน Web UI/API ของ Sunshine เอง)
+  - Moonlight Client (โปรแกรมฝั่งผู้ใช้งาน เชื่อมต่อผ่านโปรโตคอล NVIDIA GameStream-compatible ของ Sunshine)
+  - macOS Native Remote Management (`kickstart` / SSH) สำหรับงานดูแลระบบเบื้องหลังเท่านั้น ไม่ใช่ช่องทางหลักที่ผู้ใช้ปลายทางใช้เชื่อมต่อ
 
 ---
 
@@ -230,7 +232,7 @@ erDiagram
         int id PK
         string name "e.g. Mac-Mini-M2-01"
         string ip_address
-        string remote_type "rustdesk | vnc | ssh"
+        string remote_type "sunshine-moonlight"
         string remote_id
         string status "available | in_use | resetting | offline"
         boolean is_active
@@ -286,13 +288,13 @@ sequenceDiagram
     Core-->>Web: ยืนยันการจองสำเร็จ
 
     Note over Core,Host: เมื่อถึงเวลาเริ่มต้น Session (T-Start)
-    Core->>Host: สั่ง Generate Temporary Remote Password
-    Host-->>Core: ยืนยันรหัสผ่านใหม่
+    Core->>Host: สั่ง Generate Temporary Pairing PIN (Sunshine)
+    Host-->>Core: ยืนยัน PIN ใหม่
     Core->>Core: ปรับสถานะ Host เป็น 'in_use'
 
     User->>Web: เปิดหน้ารายละเอียดการจอง
-    Web-->>User: แสดง Remote ID / Temporary Password / ลิงก์เชื่อมต่อ
-    User->>Host: เชื่อมต่อผ่าน Remote Client (RustDesk/VNC/SSH)
+    Web-->>User: แสดง Hostname/IP / Pairing PIN / คำแนะนำเชื่อมต่อผ่าน Moonlight
+    User->>Host: เชื่อมต่อและจับคู่ (Pair) ผ่าน Moonlight Client เข้ากับ Sunshine Streaming Host
     
     Note over User,Host: ผู้ใช้ทำงานบนเครื่อง Mac ตามเวลาที่จอง
 
